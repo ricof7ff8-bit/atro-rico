@@ -6,7 +6,7 @@ st.set_page_config(
     page_title="f7ff8 AI Intelligence",
     page_icon="⚡",
     layout="centered",
-    initial_sidebar_state="collapsed",
+    initial_sidebar_state="expanded",
 )
 
 # تخصيص واجهة داكنة فاخرة ومريحة للموبايل
@@ -46,25 +46,44 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# اختيار النموذج
-col_space1, col_model, col_space2 = st.columns([1, 2, 1])
-with col_model:
+# محاولة جلب المفتاح من الـ Secrets أولاً
+api_key = None
+try:
+  if "OPENROUTER_API_KEY" in st.secrets and st.secrets["OPENROUTER_API_KEY"]:
+    api_key = st.secrets["OPENROUTER_API_KEY"]
+except Exception:
+  pass
+
+# الشريط الجانبي للإعدادات واختيار النموذج وإدخال المفتاح كبديل آمن
+with st.sidebar:
+  st.title("إعدادات المنظومة")
+
+  # إذا لم يتم العثور على المفتاح في السكيرتس، نتيحه هنا بكل سهولة
+  if not api_key:
+    user_input_key = st.text_input(
+        "مفتاح التشغيل (API Key):",
+        type="password",
+        placeholder="sk-or-v1-...",
+    )
+    if user_input_key:
+      api_key = user_input_key
+    st.markdown(
+        "💡 *الصق مفتاحك هنا ليعمل الموقع فوراً إذا لم تضبط الـ Secrets.*"
+    )
+  else:
+    st.success("✔ تم تحميل المفتاح بنجاح.")
+
+  st.markdown("---")
   selected_display_model = st.selectbox(
-      "النموذج النشط", ["f7-f8 slim", "f7-f8 vSuper"], label_visibility="collapsed"
+      "النموذج النشط", ["f7-f8 slim", "f7-f8 vSuper"]
   )
 
-# ربط الأسماء بالنماذج الفعلية فائقة السرعة
+# ربط الأسماء بالنماذج الفعلية
 model_mapping = {
-    "f7-f8 slim": "qwen/qwen-2.5-7b-instruct",  # الخفيف والسريع
-    "f7-f8 vSuper": "qwen/qwen-2.5-72b-instruct",  # النسخة الكاملة والقوية
+    "f7-f8 slim": "qwen/qwen-2.5-7b-instruct",  # الخفيف والسريع للبرمجة
+    "f7-f8 vSuper": "qwen/qwen-2.5-72b-instruct",  # النسخة الكاملة القوية
 }
 actual_model = model_mapping[selected_display_model]
-
-# جلب المفتاح بشكل سري وآمن من إعدادات المنصة
-try:
-  api_key = st.secrets["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"]
-except Exception:
-  api_key = None
 
 # تهيئة الذاكرة للمحادثة
 if "messages" not in st.session_state:
@@ -79,8 +98,8 @@ for message in st.session_state.messages:
 if prompt := st.chat_input("اكتب رسالتك أو استفسارك هنا..."):
   if not api_key:
     st.error(
-        "⚠️ عذراً، مفتاح الـ API غير مُعدّ في إعدادات المنصة السرية. يرجى إضافته"
-        " من لوحة التحكم."
+        "⚠️ يرجى إدخال مفتاح الـ API في الشريط الجانبي (Sidebar) لكي تبدأ المنظومة"
+        " بالعمل."
     )
   else:
     # حفظ رسالة المستخدم وعرضها
@@ -88,7 +107,7 @@ if prompt := st.chat_input("اكتب رسالتك أو استفسارك هنا..
     with st.chat_message("user"):
       st.markdown(prompt)
 
-    # توليد الرد بشكل فوري وتدفق (Streaming) كلمة بكلمة
+    # توليد الرد بشكل فوري وتدفق (Streaming)
     with st.chat_message("assistant"):
       client = OpenAI(
           base_url="https://openrouter.ai/api/v1", api_key=api_key
@@ -115,7 +134,7 @@ if prompt := st.chat_input("اكتب رسالتك أو استفسارك هنا..
         message_placeholder.markdown(full_response)
       except Exception as e:
         full_response = (
-            "⚠️ حدث خطأ في الاتصال بالنموذج. يرجى التحقق من المفتاح."
+            "⚠️ حدث خطأ في الاتصال بالنموذج. يرجى التحقق من صحة المفتاح."
         )
         message_placeholder.markdown(full_response)
 
