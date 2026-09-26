@@ -39,30 +39,15 @@ st.markdown(
     unsafe_allow_html=True,
 )
 st.markdown(
-    "<p style='text-align: center; color: #8b949e; font-size: 13px;'>المطور والمالك الأساسي: <b>أبوجاسم</b> | للإبلاغ عن الأخطاء أو الاستفسار: <a href='https://t.me/f7ff8' target='_blank' style='color: #58a6ff; text-decoration: none;'>@f7ff8</a></p>",
+    "<p style='text-align: center; color: #8b949e; font-size: 13px;'>المطور"
+    " والمالك الأساسي: <b>أبوجاسم</b> | للإبلاغ عن الأخطاء أو الاستفسار: <a"
+    " href='https://t.me/f7ff8' target='_blank' style='color: #58a6ff;"
+    " text-decoration: none;'>@f7ff8</a></p>",
     unsafe_allow_html=True,
 )
 
-# الشريط الجانبي لإدخال المفتاح (أو إعداداته)
-with st.sidebar:
-  st.title("إعدادات المنظومة")
-  # يمكنك وضع مفتاح OpenRouter هنا أو عبر Secrets
-  api_key_input = st.text_input(
-      "مفتاح التشغيل (API Key)",
-      type="password",
-      value=(
-          st.secrets.get("OPENROUTER_API_KEY", "")
-          if "OPENROUTER_API_KEY" in st.secrets
-          else ""
-      ),
-  )
-  st.markdown(
-      "احصل على مفتاحك المجاني من [OpenRouter](https://openrouter.ai) لتشغيل"
-      " النماذج بأقصى سرعة."
-  )
-
-# اختيار النموذج (تحت الخيارات أو بجانب المدخلات)
-col_space1, col_model = st.columns([2, 2])
+# اختيار النموذج
+col_space1, col_model, col_space2 = st.columns([1, 2, 1])
 with col_model:
   selected_display_model = st.selectbox(
       "النموذج النشط", ["f7-f8 slim", "f7-f8 vSuper"], label_visibility="collapsed"
@@ -70,10 +55,16 @@ with col_model:
 
 # ربط الأسماء بالنماذج الفعلية فائقة السرعة
 model_mapping = {
-    "f7-f8 slim": "qwen/qwen-2.5-7b-instruct",  # الخفيف والسريع للبرمجة البسيطة
-    "f7-f8 vSuper": "qwen/qwen-2.5-72b-instruct",  # النسخة الكاملة والقوية لكل شيء
+    "f7-f8 slim": "qwen/qwen-2.5-7b-instruct",  # الخفيف والسريع
+    "f7-f8 vSuper": "qwen/qwen-2.5-72b-instruct",  # النسخة الكاملة والقوية
 }
 actual_model = model_mapping[selected_display_model]
+
+# جلب المفتاح بشكل سري وآمن من إعدادات المنصة
+try:
+  api_key = st.secrets["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"]
+except Exception:
+  api_key = None
 
 # تهيئة الذاكرة للمحادثة
 if "messages" not in st.session_state:
@@ -86,10 +77,10 @@ for message in st.session_state.messages:
 
 # استقبال الرسالة من المستخدم
 if prompt := st.chat_input("اكتب رسالتك أو استفسارك هنا..."):
-  if not api_key_input:
+  if not api_key:
     st.error(
-        "⚠️ يرجى إدخال مفتاح الـ API في الشريط الجانبي (Sidebar) لكي تبدأ المنظومة"
-        " بالعمل."
+        "⚠️ عذراً، مفتاح الـ API غير مُعدّ في إعدادات المنصة السرية. يرجى إضافته"
+        " من لوحة التحكم."
     )
   else:
     # حفظ رسالة المستخدم وعرضها
@@ -100,7 +91,7 @@ if prompt := st.chat_input("اكتب رسالتك أو استفسارك هنا..
     # توليد الرد بشكل فوري وتدفق (Streaming) كلمة بكلمة
     with st.chat_message("assistant"):
       client = OpenAI(
-          base_url="https://openrouter.ai/api/v1", api_key=api_key_input
+          base_url="https://openrouter.ai/api/v1", api_key=api_key
       )
       message_placeholder = st.empty()
       full_response = ""
@@ -124,7 +115,7 @@ if prompt := st.chat_input("اكتب رسالتك أو استفسارك هنا..
         message_placeholder.markdown(full_response)
       except Exception as e:
         full_response = (
-            "⚠️ حدث خطأ في الاتصال بالنموذج. يرجى التأكد من صحة المفتاح."
+            "⚠️ حدث خطأ في الاتصال بالنموذج. يرجى التحقق من المفتاح."
         )
         message_placeholder.markdown(full_response)
 
